@@ -12,7 +12,7 @@ class Player(models.Model):
         ("NONE", "Dose not bowl"),
         ("PACE", "Fast / Medium pace"), 
         ("OFF_SPIN", "Off spin"),
-        ("LEG_SPIN", "let-spin"),
+        ("LEG_SPIN", "leg-spin"),
         ("LEFT_ARM", "Left-arm spin"),
     ]
 
