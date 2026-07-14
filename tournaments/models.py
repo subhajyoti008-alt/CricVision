@@ -13,6 +13,11 @@ class Tournament(models.Model):
         ("CUSTOM", "Custom"),
     ]
 
+    COMPETITION_TYPES = [
+        ("NORMAL", "Normal Tournament"),
+        ("PREMIER_LEAGUE", "Premier League"),
+    ]
+
     name = models.CharField(max_length=150, unique=True)
     city = models.CharField(max_length=80)
     venue = models.CharField(max_length=150, blank=True)
@@ -22,7 +27,14 @@ class Tournament(models.Model):
         choices = FORMAT_CHOICES,
         default = "T20",
     )
-    over_per_innings = models.PositiveSmallIntegerField(default=20)
+
+    competition_type = models.CharField(
+        max_length = 20,
+        choices = COMPETITION_TYPES,
+        default = "NORMAL",
+    )
+
+    over_per_innings = models.PositiveSmallIntegerField(default=6)
     
     start_date = models.DateField()
     end_date = models.DateField()

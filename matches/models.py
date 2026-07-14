@@ -14,6 +14,14 @@ class Match(models.Model):
         ("ABANDONED", "Abandoned"),
     ]
 
+    STAGE_CHOICES = [
+        ("LEAGUE", "League"),
+        ("QUALIFIER_1", "Qualifier 1"),
+        ("ELIMINATOR", "Eliminator"),
+        ("QUALIFIER_2", "Oualifier 2"),
+        ("FINAL", "Final"),
+    ]
+
     tournament = models.ForeignKey(
         Tournament,
         on_delete = models.SET_NULL,
@@ -36,12 +44,18 @@ class Match(models.Model):
 
     venue = models.CharField(max_length=150, blank=True)
     scheduled_at = models.DateTimeField()
-    over_per_innings = models.PositiveSmallIntegerField(default=20)
+    over_per_innings = models.PositiveSmallIntegerField(default=6)
 
     status = models.CharField(
         max_length=12,
         choices = STATUS_CHOICES,
         default="SCHEDULED",
+    )
+
+    stage = models.CharField(
+        max_length = 15,
+        choices = STAGE_CHOICES,
+        default = "LEAGUE"
     )
 
     toss_winner = models.ForeignKey(
