@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }} | CricVision{% endblock %}
+
+{% block content %}
+
+<a class="back-link" href="{% url 'teams:list' %}">← All Teams</a>
+<section class="team-hero">
+    <p class="eyebrow">{{ team.short.name }}</p>
+    <h1>{{ team.name }}</h1>
+    <p>{{ team.city|default:"Local Cricket Team" }}</p>
+
+    {% if team.captain %}
+        <p><strong>Captain:</strong> {{ team.captain.full_name }}</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Squad ({{ team.players.count }})</h2>
+
+    <div class="player-grid">
+        {% for player in team.players.all %}
+        <article class="player-card">
+            <h3>{{player.full_name}} </h3>
+            <p>{{ player.get_batting_style_display }}</p>
+            <p>{{ player.get_bowling_style_display }}</p>
+
+            {% if player.is_wicketkeeper %}
+                <span class="bedge">WicketKeeper</span>
+            {% endif %}
+        </article>
+        {% empty %}
+            <p>No players have been added to this team yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

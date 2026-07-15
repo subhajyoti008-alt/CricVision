@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %} Teams | CricVision {% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">LOCAL CRICKET</p>
+    <h1>Teams</h1>
+    <p>Ecplore every team and its registered squad.</p>
+</section>
+
+<section class="team-grid">
+    {% for team in teams %}
+    <article class="team-card">
+        <p class="team-code">{{ team.short_name }}</p>
+        <h2>{{ team.name }}</h2>
+        <p class="muted">{{ team.city|default:"Local Team" }}</p>
+
+        <p class="player-count">
+            {{ team.player_count }} player{{ team.player_count|pluralize }}
+        </p>
+
+        <a class="button-link" href="{% url 'teams:detail' team.id %}">
+            View Squad
+        </a>
+    </article>
+    {% empty %}
+        <p>No teams have been added yet.</p>
+    {% endfor %}
+</section>
+{% endblock %}
