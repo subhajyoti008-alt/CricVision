@@ -83,7 +83,7 @@ class Match(models.Model):
         related_name = "match_wins",
 
     )
-    result_summery = models.CharField(max_length=255, blank=True)
+    result_summery = models.CharField(max_length=1000, blank=True)
 
     created_at = models.DateTimeField(auto_now_add = True)
 

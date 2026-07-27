@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ innings.match }}</h1>
+
+<h2>
+    {{ innings.batting_team }}:
+    {{ innings.score_display }}
+    ({{ innings.overs_display }} overs)
+</h2>
+
+<p>
+    Striker: <strong>{{ innings.current_striker }}</strong><br>
+    Non-striker: <strong>{{ innings.current_non_striker }}</strong><br>
+    Bowler: <strong>{{ innings.current_bowler }}</strong>
+</p>
+
+{% if innings.is_completed %}
+    <p><strong>This innings is completed.</strong></p>
+
+{% elif over_limit_reached %}
+    <p><strong>The scheduled overs are complete.</strong></p>
+
+    <form method="post" action="{% url 'scoring:finish_innings' innings.id %}">
+        {% csrf_token %}
+        <button type="submit">Finish innings</button>
+    </form>
+
+{% elif innings.needs_new_bowler %}
+    <h3>Over complete — select the next bowler</h3>
+
+    <form method="post" action="{% url 'scoring:select_new_bowler' innings.id %}">
+        {% csrf_token %}
+        {{ new_bowler_form.as_p }}
+
+        <button type="submit">Start next over</button>
+    </form>
+
+{% else %}
+    <h3>Record runs</h3>
+
+    <form method="post" action="{% url 'scoring:record_runs' innings.id %}">
+        {% csrf_token %}
+
+        <button name="event" value="0">0</button>
+        <button name="event" value="1">1</button>
+        <button name="event" value="2">2</button>
+        <button name="event" value="3">3</button>
+        <button name="event" value="4">4</button>
+        <button name="event" value="6">6</button>
+        <button name="event" value="wide">Wide</button>
+        <button name="event" value="no_ball">No-ball</button>
+    </form>
+
+    <h3>Record wicket</h3>
+
+    <form method="post" action="{% url 'scoring:record_wicket' innings.id %}">
+        {% csrf_token %}
+        {{ wicket_form.as_p }}
+
+        <button type="submit">Record wicket</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="{% url 'scoring:finish_innings' innings.id %}">
+        {% csrf_token %}
+        <button type="submit">Finish innings early</button>
+    </form>
+{% endif %}
+
+<hr>
+
+<h3>Recent deliveries</h3>
+
+<ul>
+    {% for delivery in recent_deliveries %}
+        <li>
+            Ball {{ delivery.sequence }}:
+            {{ delivery.runs_off_bat }} bat runs,
+            {{ delivery.extras }} extras
+            {% if delivery.is_wicket %}
+                — Wicket: {{ delivery.wicket_player }}
+            {% endif %}
+        </li>
+    {% empty %}
+        <li>No deliveries have been recorded yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

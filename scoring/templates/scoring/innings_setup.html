@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Start Innings {{ innings.number }}</h1>
+
+<p>
+    <strong>{{ innings.batting_team }}</strong> are batting against
+    <strong>{{ innings.bowling_team }}</strong>.
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">Start live scoring</button>
+</form>
+{% endblock %}

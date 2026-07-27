@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Live Scorer</h1>
+
+<p>Select an innings to begin or continue scoring.</p>
+
+{% for innings in innings_list %}
+    <article>
+        <h2>
+            {{ innings.match }} — Innings {{ innings.number }}
+        </h2>
+
+        <p>
+            {{ innings.batting_team }} batting against
+            {{ innings.bowling_team }}
+        </p>
+
+        <p>
+            Current score: {{ innings.score_display }}
+            in {{ innings.overs_display }} overs
+        </p>
+
+        {% if innings.current_striker %}
+            <a href="{% url 'scoring:live_scorer' innings.id %}">
+                Continue scoring
+            </a>
+        {% else %}
+            <a href="{% url 'scoring:innings_setup' innings.id %}">
+                Start innings
+            </a>
+        {% endif %}
+    </article>
+    <hr>
+{% empty %}
+    <p>No active innings are available. Create an innings from Django admin first.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Live Score | CricVision {% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">LIVE CRICKET</p>
+    <h1>Matches</h1>
+    <p>Follow local cricket scores and results.</p>
+</section>
+
+<section calss="team-grid">
+    {% for match in matches %}
+    <article class="team-card">
+        <p class="team-code">{{ match.get_stage_display }}</p>
+
+        <h2> {{ match.home_team.short_name }} vs {{ match.away_team.short_name }}</h2>
+
+        <p>
+            {{ match.home_team.name }}
+            <br>
+            vs
+            <br>
+            {{ match.away_team.name }}
+        </p>
+
+        <p class="muted">
+            {{ match.get_status_display }}
+            .
+            {{ match.scheduled_at|date:"d M Y, h:i A"}}
+        </p>
+
+        <a class="button-link" href="{% url 'matches:detail' match.id %}">
+            View Scorecard
+        </a>
+    </article>
+    {% empty %}
+    <p>No matches have been created yet.</p>
+    {% endfor %}
+</section>
+{% endblock %}
