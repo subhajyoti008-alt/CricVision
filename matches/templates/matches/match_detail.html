@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}{{ match.home_team }} vs {{ match.away_team }}{% endblock %}
+{% block title %}
+{{ match.home_team }} vs {{ match.away_team }}
+{% endblock %}
 
 {% block content %}
 <a class="back-link" href="{% url 'matches:list' %}">← All Matches</a>
 
 <section class="team-hero">
-    <p class="eyebrow">{{ match.get_stage_display }} . {{ match.get_status_display }}</p>
+    <p class="eyebrow">
+        {{ match.get_stage_display }} . {{ match.get_status_display }}
+    </p>
 
     <h1>{{ match.home_team.short_name }} vs {{ match.away_team.short_name }}</h1>
 
@@ -16,33 +20,99 @@
     </p>
 </section>
 
-<section>
 
 {% if match.result_summery %}
-<section class=""team-card>
+<section class="team-card">
     <h2>Match Result</h2>
-
     <p class="player-count">
         {{ match.result_summery }}
     </p>
 </section>
 {% endif %}
 
-
+<section>
     <h2>Live Scorecard</h2>
 
-    {% for innings in match.innings.all %}
+    {% for card in innings_scorecards %}
         <article class="team-card">
-            <h3>{{ innings.batting_team.name }}</h3>
+            <h3>{{ card.innings.batting_team.name }}</h3>
 
             <p class="player-count">
-            {{ innings.score_display }}
-            <span class="muted">({{ innings.overs_display }} overs)</span>
+            {{ card.innings.score_display }}
+            <span class="muted">({{ card.innings.overs_display }} overs)</span>
             </p>
 
             <p class="muted">
-                Bowling: {{ innings.bowling_team.name }}
+                Bowling: {{ card.innings.bowling_team.name }}
             </p>
+             <h4>Batting</h4>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batter</th>
+                        <th>R</th>
+                        <th>B</th>
+                        <th>4s</th>
+                        <th>6s</th>
+                        <th>SR</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in card.batting_rows %}
+                    <tr>
+                        <td>
+                            {{ row.player }}
+                            {% if row.is_out %}
+                                (out)
+                            {% else %}
+                                (not out)
+                            {% endif %}
+                        </td>
+                        <td>{{ row.runs }}</td>
+                        <td>{{ row.balls }}</td>
+                        <td>{{ row.fours }}</td>
+                        <td>{{ row.sixes }}</td>
+                        <td>{{ row.strike_rate }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No batting data yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h4>Bowling</h4>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Bowler</th>
+                        <th>O</th>
+                        <th>R</th>
+                        <th>W</th>
+                        <th>Eco</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in card.bowling_rows %}
+                    <tr>
+                        <td>{{ row.player }}</td>
+                        <td>{{ row.overs }}</td>
+                        <td>{{ row.runs_conceded }}</td>
+                        <td>{{ row.wickets }}</td>
+                        <td>{{ row.economy }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">No bowling data yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </article>
     {% empty%}
         <p>The scorecard will appear after after the scorer creates an  innings.</p>
