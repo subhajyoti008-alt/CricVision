@@ -1,5 +1,7 @@
-from django.shortcuts import get_object_or_404, render
 
+from django.db.models import Q
+from teams.models import Team
+from django.shortcuts import get_object_or_404, render
 from players.models import Player
 from .models import Match
 
@@ -180,4 +182,89 @@ def match_detail(request, match_id):
             "match": match,
             "innings_scorecards": innings_scorecards,
         },
+    )
+
+
+def head_to_head(request):
+    teams = Team.objects.order_by("name")
+
+    team_a_id = request.GET.get("team_a")
+    team_b_id = request.GET.get("team_b")
+
+    if team_a_id and team_b_id:
+        team_a = teams.filter(pk=team_a_id).first()
+        team_b = teams.filter(pk=team_b_id).first()
+
+    else:
+        latest_match = Match.objects.filter(
+            status="COMPLETED"
+        ).select_related(
+            "home_team",
+            "away_team",
+        ).order_by("-scheduled_at").first()
+
+        if latest_match:
+            team_a = latest_match.home_team
+            team_b = latest_match.away_team
+        else:
+            team_a = None
+            team_b = None
+
+    context = {
+        "teams": teams,
+        "team_a": team_a,
+        "team_b": team_b,
+    }
+
+    matches = list(
+        Match.objects.filter(
+            status = "COMPLETED"
+        ).filter(
+            Q(home_team=team_a, away_team=team_b) 
+            | Q(home_team=team_b, away_team=team_a)
+        ).select_related(
+            "home_team",
+            "away_team",
+            "winner",
+        ).prefetch_related(
+            "innings__batting_team"
+        ).order_by("-scheduled_at")
+    )
+
+    team_a_wins = 0
+    team_b_wins = 0
+    ties = 0
+    team_a_runs = 0
+    team_b_runs = 0
+
+    for match in matches:
+        if match.winner_id == team_a.id:
+            team_a_wins += 1
+        elif match.winner_id == team_b.id:
+            team_b_wins += 1
+        else:
+            ties += 1
+
+        for innings in match.innings.all():
+            if innings.batting_team_id == team_a.id:
+                team_a_runs += innings.total_runs
+
+            elif innings.batting_team_id == team_b.id:
+                team_b_runs += innings.total_runs
+
+    context["stats"] = {
+        "matches_played" : len(matches),
+        "team_a_wins" : team_a_wins,
+        "team_b_wins" : team_b_wins,
+        "ties" : ties,
+        "team_a_runs" : team_a_runs,
+        "team_b_runs" : team_b_runs,
+    }
+
+    context["recent_matches"] = matches[:5]
+
+    return render(
+        request,
+        "matches/head_to_head.html",
+        context,
     )

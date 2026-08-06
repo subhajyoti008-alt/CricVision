@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Head-to-Head Analysis{% endblock %}
+
+{% block content %}
+<section class="team-hero">
+    <p class="eyebrow">Team Analysis</p>
+    <h1>Head-to-Head</h1>
+    <p>Compare two local cricket teams using completed-match data.</p>
+</section>
+
+<section class="team-card">
+    <form method="get">
+        <p>
+            <label for="team_a">First team</label><br>
+
+            <select name="team_a" id="team_a" required>
+                <option value="">Select a team</option>
+
+                {% for team in teams %}
+                    <option
+                        value="{{ team.id }}"
+                        {% if team_a and team.id == team_a.id %}selected{% endif %}
+                    >
+                        {{ team }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="team_b">Second team</label><br>
+
+            <select name="team_b" id="team_b" required>
+                <option value="">Select a team</option>
+
+                {% for team in teams %}
+                    <option
+                        value="{{ team.id }}"
+                        {% if team_b and team.id == team_b.id %}selected{% endif %}
+                    >
+                        {{ team }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <button type="submit">Compare teams</button>
+    </form>
+</section>
+
+{% if error %}
+    <p>{{ error }}</p>
+{% endif %}
+
+{% if stats %}
+<section>
+    <h2>{{ team_a }} vs {{ team_b }}</h2>
+
+    <div class="team-card">
+        <p><strong>Matches played:</strong> {{ stats.matches_played }}</p>
+        <p><strong>{{ team_a }} wins:</strong> {{ stats.team_a_wins }}</p>
+        <p><strong>{{ team_b }} wins:</strong> {{ stats.team_b_wins }}</p>
+        <p><strong>Tied matches:</strong> {{ stats.ties }}</p>
+        <p><strong>{{ team_a }} total runs:</strong> {{ stats.team_a_runs }}</p>
+        <p><strong>{{ team_b }} total runs:</strong> {{ stats.team_b_runs }}</p>
+    </div>
+
+    <h3>Recent matches</h3>
+
+    {% for match in recent_matches %}
+        <article class="team-card">
+            <h4>{{ match.home_team }} vs {{ match.away_team }}</h4>
+
+            <p>
+                {{ match.scheduled_at|date:"d M Y" }}
+            </p>
+
+            <p>
+                {% if match.result_summery %}
+                    {{ match.result_summery }}
+                {% else %}
+                    Completed
+                {% endif %}
+            </p>
+
+            <a href="{% url 'matches:detail' match.id %}">
+                View Scorecard
+            </a>
+        </article>
+    {% empty %}
+        <p>No completed matches exist between these teams yet.</p>
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
