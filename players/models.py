@@ -1,15 +1,25 @@
+from django.conf import settings
 from django.db import models
 
 # Create your models here.
 
 class Player(models.Model):
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete = models.SET_NULL,
+        null = True,
+        blank = True,
+        related_name = "player_profile",
+    )
+    
     BATTING_STYLES = [
         ("RIGHT", "Right-hand bat"),
         ("LEFT", "Left-hand bat"),
     ]
 
     BOWLING_STYLES = [
-        ("NONE", "Dose not bowl"),
+        ("NONE", "Does not bowl"),
         ("PACE", "Fast / Medium pace"), 
         ("OFF_SPIN", "Off spin"),
         ("LEG_SPIN", "leg-spin"),
