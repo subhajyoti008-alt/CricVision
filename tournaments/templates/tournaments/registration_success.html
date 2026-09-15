@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Submitted | CricVision</title>
+    <link rel="stylesheet" href="{% static 'css/registration.css' %}">
+</head>
+<body>
+    <main class="registration-page">
+        <section class="registration-card success-card">
+            <p class="eyebrow">CRICVISION</p>
+            <h1>Registration Submitted</h1>
+
+            <p>
+                Your player registration has been received successfully.
+            </p>
+
+            <p>
+                The organizer will review it and confirm payment details.
+            </p>
+
+            <a class="button-link" href="{% url 'tournaments:player_register' %}">
+                Register Another Player
+            </a>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,47 +1,34 @@
-from django.http import JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import PlayerTournamentRegistrationForm
 
 
-# Create your views here.
-
 @require_http_methods(["GET", "POST"])
 def player_register(request):
-    if request.method == "GET":
-        return JsonResponse(
-            {
-                "message": (
-                    "Send a POST request to register "
-                    "a player for a tournament."
-                )
-            }
+    if request.method == "POST":
+        form = PlayerTournamentRegistrationForm(
+            request.POST
         )
 
-    form = PlayerTournamentRegistrationForm(
-        request.POST
-    )
+        if form.is_valid():
+            form.save()
 
-    if not form.is_valid():
-        return JsonResponse(
-            {
-                "errors": form.errors.get_json_data(),
-            },
-            status=400,
-        )
+            return redirect(
+                "tournaments:registration_success"
+            )
+    else:
+        form = PlayerTournamentRegistrationForm()
 
-    registration = form.save()
-
-    return JsonResponse(
-        {
-            "message": "Registration submitted successfully.",
-            "registration_id": registration.id,
-            "player": registration.player.full_name,
-            "tournament": registration.tournament.name,
-            "status": registration.status,
-            "payment_status": registration.payment_status,
-        },
-        status=201,
+    return render(
+        request,
+        "tournaments/player_register.html",
+        {"form": form},
     )
 
 
+def registration_success(request):
+    return render(
+        request,
+        "tournaments/registration_success.html",
+    )

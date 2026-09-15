@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Registration | CricVision</title>
+    <link rel="stylesheet" href="{% static 'css/registration.css' %}">
+</head>
+<body>
+    <main class="registration-page">
+        <section class="registration-card">
+            <div class="heading">
+                <p class="eyebrow">CRICVISION</p>
+                <h1>Player Registration</h1>
+                <p>Register for a published cricket tournament.</p>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="field">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+
+                        {{ field }}
+
+                        {% for error in field.errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit">
+                    Submit Registration
+                </button>
+            </form>
+
+            <p class="note">
+                Payment can be completed online, offline, or waived by
+                the organizer.
+            </p>
+        </section>
+    </main>
+</body>
+</html>
