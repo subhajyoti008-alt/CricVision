@@ -28,6 +28,10 @@ class PlayerTournamentRegistrationForm(forms.Form):
 
     phone_number = forms.CharField(max_length=15)
 
+    profile_photo = forms.ImageField(
+        required=True,
+    )
+
     date_of_birth = forms.DateField(
         required=False,
         widget=forms.DateInput(
@@ -114,6 +118,7 @@ class PlayerTournamentRegistrationForm(forms.Form):
             email=self.cleaned_data["email"],
             full_name=self.cleaned_data["full_name"],
             phone_number=self.cleaned_data["phone_number"],
+            profile_photo=self.cleaned_data["profile_photo"],
             date_of_birth=self.cleaned_data[
                 "date_of_birth"
             ],
@@ -129,4 +134,14 @@ class PlayerTournamentRegistrationForm(forms.Form):
             ],
             tournament=self.cleaned_data["tournament"],
         )
-    
+
+    def clean_profile_photo(self):
+        profile_photo = self.cleaned_data["profile_photo"]
+
+        if profile_photo.size > 5 * 1024 * 1024:
+            raise forms.ValidationError(
+                "Profile photo must be 5 MB or smaller."
+            )
+
+
+        return profile_photo

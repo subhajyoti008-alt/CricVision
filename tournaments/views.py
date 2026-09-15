@@ -8,7 +8,8 @@ from .forms import PlayerTournamentRegistrationForm
 def player_register(request):
     if request.method == "POST":
         form = PlayerTournamentRegistrationForm(
-            request.POST
+            request.POST,
+            request.FILES,
         )
 
         if form.is_valid():
