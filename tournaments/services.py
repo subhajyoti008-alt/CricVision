@@ -94,7 +94,7 @@ def register_player_for_tournament(
     password,
     full_name,
     phone_number,
-    profile_photo,
+    profile_photo=None,
     tournament,
     email="",
     date_of_birth=None,

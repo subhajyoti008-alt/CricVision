@@ -25,7 +25,23 @@
                             {{ field.label }}
                         </label>
 
-                        {{ field }}
+                        {% if field.name == "password" or field.name == "password_confirm" %}
+    <div class="password-control">
+        {{ field }}
+
+        <button
+            type="button"
+            class="password-toggle"
+            data-target="{{ field.id_for_label }}"
+            aria-label="Show password"
+            aria-pressed="false"
+        >
+            👁
+        </button>
+    </div>
+{% else %}
+    {{ field }}
+{% endif %}
 
                         {% for error in field.errors %}
                             <p class="error">{{ error }}</p>
@@ -33,7 +49,7 @@
                     </div>
                 {% endfor %}
 
-                <button type="submit">
+                <button type="submit" class="submit-button">
                     Submit Registration
                 </button>
             </form>
@@ -44,5 +60,34 @@
             </p>
         </section>
     </main>
+    <script>
+    document.querySelectorAll(".password-toggle").forEach(
+        function (button) {
+            button.addEventListener("click", function () {
+                const passwordInput = document.getElementById(
+                    button.dataset.target
+                );
+
+                const isVisible = passwordInput.type === "text";
+
+                passwordInput.type = isVisible
+                    ? "password"
+                    : "text";
+
+                button.setAttribute(
+                    "aria-label",
+                    isVisible
+                        ? "Show password"
+                        : "Hide password"
+                );
+
+                button.setAttribute(
+                    "aria-pressed",
+                    String(!isVisible)
+                );
+            });
+        }
+    );
+</script>
 </body>
 </html>

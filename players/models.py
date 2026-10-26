@@ -29,7 +29,7 @@ class Player(models.Model):
     full_name = models.CharField(max_length=120)
     date_of_birth = models.DateField(null=True, blank=True)
     city = models.CharField(max_length=80, blank=True)
-    profile_photo = models.ImageField(upload_to = "player_photos/", blank=True)
+    profile_photo = models.ImageField(upload_to = "player_photos/", blank=True, help_text="Upload a clear profile photo (maximum 5 MB).")
 
     batting_style = models.CharField(
         max_length=10, 

@@ -30,6 +30,7 @@ class PlayerTournamentRegistrationForm(forms.Form):
 
     profile_photo = forms.ImageField(
         required=True,
+        help_text = "Upload a clear profile photo (maximum 5 MB). ",
     )
 
     date_of_birth = forms.DateField(
@@ -138,7 +139,9 @@ class PlayerTournamentRegistrationForm(forms.Form):
     def clean_profile_photo(self):
         profile_photo = self.cleaned_data["profile_photo"]
 
-        if profile_photo.size > 5 * 1024 * 1024:
+        max_size = 5*1024*1024  # 5 MB in bytes
+
+        if profile_photo.size > max_size:
             raise forms.ValidationError(
                 "Profile photo must be 5 MB or smaller."
             )
