@@ -77,7 +77,7 @@ class Registration(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ("UNPAID", "Unpaid"),
-        ("PENDING", "Penduing"),
+        ("PENDING", "Pending"),
         ("PAID", "Paid"),
         ("WAIVED", "Fee waived"),
     ]
@@ -117,8 +117,8 @@ class Registration(models.Model):
             )
         ]
 
-        def __str__(self):
-            return f"{self.player} - {self.tournament}"
+    def __str__(self):
+        return f"{self.player} - {self.tournament}"
 
 
 class Payment(models.Model):
@@ -282,7 +282,7 @@ class Auction(models.Model):
             tournament.entry_fee > 0
             and self.registration.payment_status not in ["PAID", "WAIVED"]
         ):
-            errors["registration"] = (
+             errors["registration"] = (
                 "Payment must be verified or waived before the auction."
             )
 
