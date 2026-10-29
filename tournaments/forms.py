@@ -148,3 +148,51 @@ class PlayerTournamentRegistrationForm(forms.Form):
 
 
         return profile_photo
+
+class PlayerPaymentForm(forms.Form):
+    method = forms.ChoiceField(
+        label="How will you pay ?",
+        choices=[
+    (
+        "ONLINE",
+        "UPI / bank transfer",
+    ),
+    (
+        "OFFLINE",
+        "Pay the organizer directly",
+    ),
+        ],
+        widget=forms.RadioSelect,
+    )
+
+    transaction_reference = forms.CharField(
+        max_length=150,
+        required=False,
+        label="UPI / bank transaction reference",
+        help_text=(
+            "Required only for UPI or bank transfer."
+        ),
+    )
+
+    def clean_transaction_reference(self):
+        return self.cleaned_data[
+            "transaction_reference"
+        ].strip()
+    def clean(self):
+        cleaned_data = super().clean()
+
+        method = cleaned_data.get("method")
+        transaction_reference = cleaned_data.get(
+            "transaction_reference"
+        )
+
+        if method == "ONLINE" and not transaction_reference:
+            self.add_error(
+                "transaction_reference",
+                (
+                    "Enter the UPI or bank transaction "
+                    "reference."
+                ),
+            )
+
+        return cleaned_data

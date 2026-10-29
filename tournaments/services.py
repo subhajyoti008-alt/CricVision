@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from accounts.models import UserProfile
 from players.models import Player
 
-from .models import PointsTable, Registration
+from .models import Payment, PointsTable, Registration
 
 
 # Create Model:
@@ -159,3 +159,72 @@ def register_player_for_tournament(
     )
 
     return registration
+@transaction.atomic
+def submit_player_payment(
+    *,
+    registration,
+    user,
+    method,
+    transaction_reference="",
+):
+    if not user.is_authenticated:
+        raise ValidationError(
+            "You must be logged in to submit a payment."
+        )
+
+    if registration.player.user_id != user.id:
+        raise ValidationError(
+            "You can only submit payment for your own registration."
+        )
+
+    if registration.status == "REJECTED":
+        raise ValidationError(
+            "This registration was rejected."
+        )
+
+    if registration.tournament.entry_fee <= 0:
+        raise ValidationError(
+            "This tournament does not require payment."
+        )
+
+    allowed_methods = {"ONLINE", "OFFLINE"}
+
+    if method not in allowed_methods:
+        raise ValidationError(
+            "Choose a valid payment method."
+        )
+
+    transaction_reference = transaction_reference.strip()
+
+    if method == "ONLINE" and not transaction_reference:
+        raise ValidationError(
+            "Enter the UPI or bank transaction reference."
+        )
+
+    if method == "OFFLINE":
+        transaction_reference = ""
+
+    payment, created = Payment.objects.get_or_create(
+        registration=registration,
+        defaults={
+            "method": method,
+            "amount": registration.tournament.entry_fee,
+            "transaction_reference": transaction_reference,
+        },
+    )
+
+    if not created and payment.status == "VERIFIED":
+        raise ValidationError(
+            "This payment has already been verified."
+        )
+
+    if not created:
+        payment.method = method
+        payment.amount = registration.tournament.entry_fee
+        payment.transaction_reference = transaction_reference
+        payment.status = "PENDING"
+        payment.verified_by = None
+        payment.verified_at = None
+        payment.save()
+
+    return payment
