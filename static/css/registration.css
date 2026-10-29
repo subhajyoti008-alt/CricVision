@@ -59,7 +59,7 @@ label {
     font-weight: 600;
 }
 
-input,
+input:not([type="radio"]),
 select {
     width: 100%;
     padding: 12px;
@@ -144,4 +144,41 @@ button:hover,
     color: #16827a;
     font-size: 18px;
     cursor: pointer;
+}
+
+#id_method {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+#id_method > div {
+    border: 1px solid #d6e0e8;
+    border-radius: 12px;
+    background: #ffffff;
+    transition: 0.2s ease;
+}
+
+#id_method > div:has(input:checked) {
+    border-color: #14857b;
+    background: #eefaf8;
+}
+
+#id_method label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#id_method input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 18px;
+    accent-color: #14857b;
 }

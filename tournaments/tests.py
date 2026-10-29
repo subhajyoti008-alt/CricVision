@@ -11,6 +11,8 @@ from accounts.models import UserProfile
 
 from .forms import PlayerTournamentRegistrationForm
 from .models import Tournament
+from .models import Payment
+from .services import submit_player_payment
 
 
 class PlayerRegistrationFormTests(TestCase):
@@ -21,6 +23,7 @@ class PlayerRegistrationFormTests(TestCase):
             start_date=date(2026, 12, 1),
             end_date=date(2026, 12, 3),
             is_published=True,
+            entry_fee=100,
         )
 
     def create_test_photo(self):
@@ -95,4 +98,54 @@ class PlayerRegistrationFormTests(TestCase):
                 self.assertEqual(
                     registration.payment_status,
                     "UNPAID",
+                )
+
+
+    def test_player_can_submit_online_payment(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with self.settings(MEDIA_ROOT=media_root):
+                form = PlayerTournamentRegistrationForm(
+                    data={
+                        "username": "payment_player",
+                        "password": "StrongPassword123!",
+                        "password_confirm": "StrongPassword123!",
+                        "email": "payment@example.com",
+                        "full_name": "Payment Player",
+                        "phone_number": "9876543211",
+                        "date_of_birth": "2008-05-10",
+                        "city": "Kolkata",
+                        "batting_style": "RIGHT",
+                        "bowling_style": "PACE",
+                        "tournament": self.tournament.id,
+                    },
+                    files={
+                        "profile_photo": self.create_test_photo(),
+                    },
+                )
+
+                self.assertTrue(form.is_valid(), form.errors)
+
+                registration = form.save()
+                user = registration.player.user
+
+                payment = submit_player_payment(
+                    registration=registration,
+                    user=user,
+                    method="ONLINE",
+                    transaction_reference="TEST-UPI-1234",
+                )
+
+                self.assertEqual(Payment.objects.count(), 1)
+                self.assertEqual(payment.method, "ONLINE")
+                self.assertEqual(payment.status, "PENDING")
+                self.assertEqual(
+                    payment.amount,
+                    self.tournament.entry_fee,
+                )
+
+                registration.refresh_from_db()
+
+                self.assertEqual(
+                    registration.payment_status,
+                    "PENDING",
                 )

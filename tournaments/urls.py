@@ -16,4 +16,14 @@ urlpatterns = [
         views.registration_success,
         name = "registration_success",
     ),
+    path(
+        "payments/<int:registration_id>/",
+        views.payment_submit,
+        name="payment_submit",
+    ),
+    path(
+        "register/success/<int:registration_id>/",
+        views.registration_success,
+        name="registration_success",
+    ),
 ]

@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>Payment Details | CricVision</title>
+    <link
+        rel="stylesheet"
+        href="{% static 'css/registration.css' %}"
+    >
+</head>
+<body>
+    <main class="registration-page">
+        <section class="registration-card">
+            <p class="eyebrow">CRICVISION</p>
+            <h1>Payment Details</h1>
+
+            <p>
+                Tournament:
+                <strong>{{ registration.tournament.name }}</strong>
+            </p>
+
+            <p>
+                Entry fee:
+                <strong>₹{{ registration.tournament.entry_fee }}</strong>
+            </p>
+
+            <p>
+                Your payment will remain pending until an organizer
+                verifies it.
+            </p>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% for error in form.non_field_errors %}
+                    <p class="error">{{ error }}</p>
+                {% endfor %}
+
+                {% for field in form %}
+                    <div class="field">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+                            <small>{{ field.help_text }}</small>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <button
+                    type="submit"
+                    class="submit-button"
+                >
+                    Submit Payment Details
+                </button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
