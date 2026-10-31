@@ -5,14 +5,17 @@ from io import BytesIO
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.urls import reverse
 from PIL import Image
 
 from accounts.models import UserProfile
 
 from .forms import PlayerTournamentRegistrationForm
-from .models import Tournament
+from .models import Tournament, Registration
 from .models import Payment
 from .services import submit_player_payment
+from players.models import Player
+
 
 
 class PlayerRegistrationFormTests(TestCase):
@@ -149,3 +152,73 @@ class PlayerRegistrationFormTests(TestCase):
                     registration.payment_status,
                     "PENDING",
                 )
+
+    def test_my_registrations_requires_login(self):
+        url = reverse("tournaments:my_registrations")
+
+        response = self.client.get(url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={url}",
+        )
+
+
+def test_player_only_sees_own_registrations(self):
+    User = get_user_model()
+
+    current_user = User.objects.create_user(
+        username="current_player",
+        password="StrongPassword123!",
+    )
+
+    current_player = Player.objects.create(
+        user=current_user,
+        full_name="Current Player",
+    )
+
+    Registration.objects.create(
+        player=current_player,
+        tournament=self.tournament,
+    )
+
+    other_user = User.objects.create_user(
+        username="other_player",
+        password="StrongPassword123!",
+    )
+
+    other_player = Player.objects.create(
+        user=other_user,
+        full_name="Other Player",
+    )
+
+    other_tournament = Tournament.objects.create(
+        name="Private Other Player Cup",
+        city="Kolkata",
+        start_date=date(2026, 12, 5),
+        end_date=date(2026, 12, 7),
+        is_published=True,
+    )
+
+    Registration.objects.create(
+        player=other_player,
+        tournament=other_tournament,
+    )
+
+    self.client.force_login(current_user)
+
+    response = self.client.get(
+        reverse("tournaments:my_registrations")
+    )
+
+    self.assertEqual(response.status_code, 200)
+
+    self.assertContains(
+        response,
+        self.tournament.name,
+    )
+
+    self.assertNotContains(
+        response,
+        other_tournament.name,
+    )

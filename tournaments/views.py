@@ -96,3 +96,25 @@ def payment_submit(request, registration_id):
             "registration": registration,
         },
     )
+
+@login_required
+@require_http_methods(["GET"])
+def my_registrations(request):
+    registrations = (
+        Registration.objects.filter(
+            player__user=request.user,
+        )
+        .select_related(
+            "player",
+            "tournament",
+        )
+        .order_by("-created_at")
+    )
+
+    return render(
+        request,
+        "tournaments/my_registrations.html",
+        {
+            "registrations": registrations,
+        },
+    )

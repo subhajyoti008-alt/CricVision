@@ -110,6 +110,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "tournaments:my_registrations"
+LOGOUT_REDIRECT_URL = "accounts:login"
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/

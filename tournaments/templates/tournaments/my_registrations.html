@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Registrations | CricVision</title>
+    <link rel="stylesheet" href="{% static 'css/registration.css' %}">
+</head>
+<body>
+    <main class="registration-page">
+        <section class="registration-card">
+            <p class="eyebrow">CRICVISION</p>
+            <h1>My Registrations</h1>
+
+            {% if registrations %}
+                {% for registration in registrations %}
+                    <div class="field">
+                        <h2>{{ registration.tournament.name }}</h2>
+
+                        <p>
+                            <strong>Registration status:</strong>
+                            {{ registration.get_status_display }}
+                        </p>
+
+                        <p>
+                            <strong>Payment status:</strong>
+                            {{ registration.get_payment_status_display }}
+                        </p>
+
+                        {% if registration.payment_status == "UNPAID" and registration.tournament.entry_fee %}
+                            <a
+                                class="button-link"
+                                href="{% url 'tournaments:payment_submit' registration.id %}"
+                            >
+                                Submit Payment
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>You have not registered for any tournament yet.</p>
+
+                <a
+                    class="button-link"
+                    href="{% url 'tournaments:player_register' %}"
+                >
+                    Register for a Tournament
+                </a>
+            {% endif %}
+
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit">
+                    Log Out
+                </button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

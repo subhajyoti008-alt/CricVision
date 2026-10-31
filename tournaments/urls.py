@@ -26,4 +26,9 @@ urlpatterns = [
         views.registration_success,
         name="registration_success",
     ),
+    path(
+        "my-registrations/",
+        views.my_registrations,
+        name="my_registrations",
+    ),
 ]
