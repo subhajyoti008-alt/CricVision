@@ -2,7 +2,7 @@ from django.db import transaction
 from matches.models import Match
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from accounts.models import UserProfile
 from players.models import Player
@@ -228,3 +228,69 @@ def submit_player_payment(
         payment.save()
 
     return payment
+
+
+@transaction.atomic
+def approve_registration(*, registration, organizer):
+    if not organizer.is_staff:
+        raise PermissionDenied(
+            "Only organizers can approve registrations."
+        )
+
+    if registration.status == "REJECTED":
+        raise ValidationError(
+            "A rejected registration cannot be approved."
+        )
+
+    if registration.payment_status not in {"PAID", "WAIVED"}:
+        raise ValidationError(
+            "Verify or waive payment before approving "
+            "this registration."
+        )
+
+    if registration.status != "APPROVED":
+        registration.status = "APPROVED"
+        registration.save(update_fields=["status"])
+
+    return registration
+
+
+@transaction.atomic
+def reject_registration(*, registration, organizer):
+    if not organizer.is_staff:
+        raise PermissionDenied(
+            "Only organizers can reject registrations."
+        )
+
+    if registration.status == "APPROVED":
+        raise ValidationError(
+            "An approved registration cannot be rejected."
+        )
+
+    if registration.status != "REJECTED":
+        registration.status = "REJECTED"
+        registration.save(update_fields=["status"])
+
+    return registration
+
+@transaction.atomic
+def return_registration_to_pending(
+    *,
+    registration,
+    organizer,
+):
+    if not organizer.is_staff:
+        raise PermissionDenied(
+            "Only organizers can change registrations."
+        )
+
+    if registration.status != "APPROVED":
+        raise ValidationError(
+            "Only approved registrations can be "
+            "returned to pending."
+        )
+
+    registration.status = "PENDING"
+    registration.save(update_fields=["status"])
+
+    return registration

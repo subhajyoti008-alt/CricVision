@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from PIL import Image
 
 from accounts.models import UserProfile
@@ -13,7 +14,7 @@ from accounts.models import UserProfile
 from .forms import PlayerTournamentRegistrationForm
 from .models import Tournament, Registration
 from .models import Payment
-from .services import submit_player_payment
+from .services import (submit_player_payment, approve_registration, return_registration_to_pending,)
 from players.models import Player
 
 
@@ -222,3 +223,93 @@ def test_player_only_sees_own_registrations(self):
         response,
         other_tournament.name,
     )
+
+
+class RegistrationApprovalServiceTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.tournament = Tournament.objects.create(
+            name="Approval Test Cup",
+            city="Kolkata",
+            start_date=date(2026, 12, 10),
+            end_date=date(2026, 12, 12),
+            entry_fee=100,
+            is_published=True,
+        )
+
+        self.organizer = User.objects.create_user(
+            username="organizer_user",
+            password="StrongPassword123!",
+            is_staff=True,
+        )
+
+        player_user = User.objects.create_user(
+            username="approval_player",
+            password="StrongPassword123!",
+        )
+
+        self.player = Player.objects.create(
+            user=player_user,
+            full_name="Approval Player",
+        )
+
+        self.registration = Registration.objects.create(
+            player=self.player,
+            tournament=self.tournament,
+        )
+
+    def test_paid_registration_can_be_approved(self):
+        self.registration.payment_status = "PAID"
+        self.registration.save(
+            update_fields=["payment_status"],
+        )
+
+        approve_registration(
+            registration=self.registration,
+            organizer=self.organizer,
+        )
+
+        self.registration.refresh_from_db()
+
+        self.assertEqual(
+            self.registration.status,
+            "APPROVED",
+        )
+
+    def test_unpaid_registration_cannot_be_approved(self):
+        with self.assertRaises(ValidationError):
+            approve_registration(
+                registration=self.registration,
+                organizer=self.organizer,
+            )
+
+        self.registration.refresh_from_db()
+
+        self.assertEqual(
+            self.registration.status,
+            "PENDING",
+        )
+
+    def test_approved_registration_can_return_to_pending(self):
+        self.registration.payment_status = "PAID"
+        self.registration.save(
+            update_fields=["payment_status"],
+        )
+
+        approve_registration(
+            registration=self.registration,
+            organizer=self.organizer,
+        )
+
+        return_registration_to_pending(
+            registration=self.registration,
+            organizer=self.organizer,
+        )
+
+        self.registration.refresh_from_db()
+
+        self.assertEqual(
+            self.registration.status,
+            "PENDING",
+        )

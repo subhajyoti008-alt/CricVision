@@ -3,10 +3,12 @@ from datetime import datetime, time, timedelta
 from django.contrib import admin, messages
 from django.db import transaction
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from matches.models import Match
 
 from .models import Auction, Payment, PointsTable, Registration, Tournament
+from .services import (approve_registration, reject_registration, return_registration_to_pending)
 
 
 @admin.register(Tournament)
@@ -31,7 +33,7 @@ class TournamentAdmin(admin.ModelAdmin):
     search_fields = ("name", "city", "venue")
     filter_horizontal = ("teams",)
 
-    actions = ("generate_premier_league_fixtures",)
+    actions = ("generate_premier_league_fixtures","return_selected_registrations_to_pending",)
 
     @admin.action(
         description="Generate Premier League fixtures"
@@ -159,6 +161,162 @@ class RegistrationAdmin(admin.ModelAdmin):
         "player__full_name",
         "tournament__name",
     )
+
+    actions = (
+    "approve_selected_registrations",
+    "reject_selected_registrations",
+    "return_selected_registrations_to_pending",
+    )
+
+    readonly_fields = (
+        "status",
+        "payment_status",
+        "created_at",
+    )
+
+
+    @admin.action(
+        description="Approve selected registrations",
+    )
+    def approve_selected_registrations(
+        self,
+        request,
+        queryset,
+    ):
+        approved_count = 0
+        errors = []
+
+        for registration in queryset:
+            was_approved = (
+                registration.status == "APPROVED"
+            )
+
+            try:
+                approve_registration(
+                    registration=registration,
+                    organizer=request.user,
+                )
+            except (
+                PermissionDenied,
+                ValidationError,
+            ) as error:
+                errors.append(
+                    f"{registration}: {error}"
+                )
+            else:
+                if not was_approved:
+                    approved_count += 1
+
+        if approved_count:
+            self.message_user(
+                request,
+                (
+                    f"Approved {approved_count} "
+                    "registration(s)."
+                ),
+                level=messages.SUCCESS,
+            )
+
+        if errors:
+            self.message_user(
+                request,
+                " ".join(errors),
+                level=messages.ERROR,
+            )
+
+    @admin.action(
+        description="Reject selected registrations",
+    )
+    def reject_selected_registrations(
+        self,
+        request,
+        queryset,
+    ):
+        rejected_count = 0
+        errors = []
+
+        for registration in queryset:
+            was_rejected = (
+                registration.status == "REJECTED"
+            )
+
+            try:
+                reject_registration(
+                    registration=registration,
+                    organizer=request.user,
+                )
+            except (
+                PermissionDenied,
+                ValidationError,
+            ) as error:
+                errors.append(
+                    f"{registration}: {error}"
+                )
+            else:
+                if not was_rejected:
+                    rejected_count += 1
+
+        if rejected_count:
+            self.message_user(
+                request,
+                (
+                    f"Rejected {rejected_count} "
+                    "registration(s)."
+                ),
+                level=messages.SUCCESS,
+            )
+
+        if errors:
+            self.message_user(
+                request,
+                " ".join(errors),
+                level=messages.ERROR,
+            )
+
+
+    @admin.action(
+        description="Return selected registrations to pending",
+    )
+    def return_selected_registrations_to_pending(
+        self,
+        request,
+        queryset,
+    ):
+        returned_count = 0
+        errors = []
+
+        for registration in queryset:
+            try:
+                return_registration_to_pending(
+                    registration=registration,
+                    organizer=request.user,
+                )
+            except (
+                PermissionDenied,
+                ValidationError,
+            ) as error:
+                errors.append(
+                    f"{registration}: {error}"
+            )
+            else:
+                returned_count += 1
+
+        if returned_count:
+            self.message_user(
+                request,
+                (
+                    f"Returned {returned_count} "
+                    "registration(s) to pending."
+                ),
+                level=messages.SUCCESS,
+            )
+
+        if errors:
+         self.message_user(
+             request,
+             " ".join(errors),
+             level=messages.ERROR,
+            )        
 
 
 @admin.register(Payment)
