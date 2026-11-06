@@ -12,10 +12,11 @@ from PIL import Image
 from accounts.models import UserProfile
 
 from .forms import PlayerTournamentRegistrationForm
-from .models import Tournament, Registration
+from .models import Auction, Tournament, Registration
 from .models import Payment
 from .services import (submit_player_payment, approve_registration, return_registration_to_pending,)
 from players.models import Player
+from decimal import Decimal
 
 
 
@@ -313,3 +314,69 @@ class RegistrationApprovalServiceTests(TestCase):
             self.registration.status,
             "PENDING",
         )
+
+
+class AuctionEligibilityTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.tournament = Tournament.objects.create(
+            name="Auction Test Cup",
+            city="Kolkata",
+            start_date=date(2026, 12, 15),
+            end_date=date(2026, 12, 17),
+            entry_fee=100,
+            is_published=True,
+        )
+
+        player_user = User.objects.create_user(
+            username="auction_player",
+            password="StrongPassword123!",
+        )
+
+        self.player = Player.objects.create(
+            user=player_user,
+            full_name="Auction Player",
+        )
+
+        self.registration = Registration.objects.create(
+            player=self.player,
+            tournament=self.tournament,
+        )
+
+    def test_paid_approved_player_can_enter_auction(self):
+        self.registration.status = "APPROVED"
+        self.registration.payment_status = "PAID"
+        self.registration.save(
+            update_fields=[
+                "status",
+                "payment_status",
+            ],
+        )
+
+        auction = Auction.objects.create(
+            registration=self.registration,
+            base_price=Decimal("500.00"),
+        )
+
+        self.assertEqual(
+            auction.status,
+            "AVAILABLE",
+        )
+
+        self.assertEqual(
+            auction.current_bid,
+            Decimal("500.00"),
+        )
+
+    def test_unpaid_player_cannot_enter_auction(self):
+        self.registration.status = "APPROVED"
+        self.registration.save(
+            update_fields=["status"],
+        )
+
+        with self.assertRaises(ValidationError):
+            Auction.objects.create(
+                registration=self.registration,
+                base_price=Decimal("500.00"),
+            )
