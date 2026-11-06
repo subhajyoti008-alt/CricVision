@@ -9,6 +9,7 @@ from matches.models import Match
 
 from .models import Auction, Payment, PointsTable, Registration, Tournament
 from .services import (approve_registration, reject_registration, return_registration_to_pending)
+from django.db.models import Q
 
 
 @admin.register(Tournament)
@@ -386,6 +387,58 @@ class AuctionAdmin(admin.ModelAdmin):
         "listed_at",
         "completed_at",
     )
+
+    def get_readonly_fields(
+        self,
+        request,
+        obj=None,
+    ):
+        if obj:
+            return self.readonly_fields + (
+                "registration",
+            )
+
+        return self.readonly_fields
+
+
+    def formfield_for_foreignkey(
+        self,
+        db_field,
+        request,
+        **kwargs,
+    ):
+        if db_field.name == "registration":
+            kwargs["queryset"] = (
+                Registration.objects.filter(
+                    status="APPROVED",
+                    auction__isnull=True,
+                )
+                .filter(
+                    Q(
+                        payment_status__in=[
+                            "PAID",
+                            "WAIVED",
+                        ]
+                    )
+                    | Q(
+                        tournament__entry_fee=0
+                    )
+                )
+                .select_related(
+                    "player",
+                    "tournament",
+                )
+                .order_by(
+                    "tournament__name",
+                    "player__full_name",
+                )
+            )
+
+        return super().formfield_for_foreignkey(
+            db_field,
+            request,
+            **kwargs,
+        )
 
     def save_model(self, request, obj, form, change):
         if obj.status == "SOLD" and not obj.completed_at:

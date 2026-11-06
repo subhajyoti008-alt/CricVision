@@ -266,6 +266,8 @@ class Auction(models.Model):
     def save(self, *args, **kwargs):
         if self.current_bid is None:
             self.current_bid = self.base_price
+
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -318,7 +320,6 @@ class Auction(models.Model):
         self.current_bid = price
         self.completed_at = timezone.now()
 
-        self.full_clean()
         self.save()
 
         team.players.add(self.registration.player)
