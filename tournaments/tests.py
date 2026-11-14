@@ -17,6 +17,8 @@ from .models import Payment
 from .services import (submit_player_payment, approve_registration, return_registration_to_pending,)
 from players.models import Player
 from decimal import Decimal
+from teams.models import Team
+
 
 
 
@@ -380,3 +382,100 @@ class AuctionEligibilityTests(TestCase):
                 registration=self.registration,
                 base_price=Decimal("500.00"),
             )
+
+
+class AuctionSaleTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.tournament = Tournament.objects.create(
+            name="Sale Test Cup",
+            city="Kolkata",
+            start_date=date(2026, 12, 20),
+            end_date=date(2026, 12, 22),
+            entry_fee=100,
+            is_published=True,
+        )
+
+        self.team = Team.objects.create(
+            name="CricVision Warriors",
+            short_name="CVW",
+        )
+
+        self.tournament.teams.add(self.team)
+
+        player_user = User.objects.create_user(
+            username="sale_player",
+            password="StrongPassword123!",
+        )
+
+        self.player = Player.objects.create(
+            user=player_user,
+            full_name="Sale Player",
+        )
+
+        self.registration = Registration.objects.create(
+            player=self.player,
+            tournament=self.tournament,
+            status="APPROVED",
+            payment_status="PAID",
+        )
+
+        self.auction = Auction.objects.create(
+            registration=self.registration,
+            base_price=Decimal("500.00"),
+        )
+
+    def test_selling_auction_assigns_player_to_team(self):
+        self.auction.mark_sold(
+            team=self.team,
+            price=Decimal("750.00"),
+        )
+
+        self.auction.refresh_from_db()
+
+        self.assertEqual(
+            self.auction.status,
+            "SOLD",
+        )
+
+        self.assertEqual(
+            self.auction.winning_team,
+            self.team,
+        )
+
+        self.assertEqual(
+            self.auction.final_price,
+            Decimal("750.00"),
+        )
+
+        self.assertTrue(
+            self.team.players.filter(
+                pk=self.player.pk,
+            ).exists()
+        )
+
+    def test_cannot_sell_player_to_team_from_another_tournament(self):
+        outside_team = Team.objects.create(
+            name="Outside Team",
+            short_name="OUT",
+        )
+
+        with self.assertRaises(ValidationError):
+            self.auction.mark_sold(
+                team=outside_team,
+                price=Decimal("750.00"),
+            )
+
+        self.auction.refresh_from_db()
+
+        self.assertEqual(
+            self.auction.status,
+            "AVAILABLE",
+        )
+
+        self.assertFalse(
+            outside_team.players.filter(
+                pk=self.player.pk,
+            ).exists()
+        )

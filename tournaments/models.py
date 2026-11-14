@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from teams.models import Team 
 from players.models import Player
 from django.conf import settings
@@ -313,7 +313,56 @@ class Auction(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    @transaction.atomic
     def mark_sold(self, team, price):
+        if not self.pk:
+            raise ValidationError(
+                "Save the auction before marking it sold."
+            )
+
+        saved_auction = Auction.objects.only(
+            "status"
+        ).get(pk=self.pk)
+
+        if saved_auction.status != "AVAILABLE":
+            raise ValidationError(
+                "Only an available auction can be marked sold."
+            )
+
+        if price is None:
+            raise ValidationError(
+                "Enter the final auction price."
+            )
+
+        if price < self.base_price:
+            raise ValidationError(
+                "Final price cannot be below the base price."
+            )
+
+        tournament = self.registration.tournament
+        player = self.registration.player
+
+        if not tournament.teams.filter(
+            pk=team.pk
+        ).exists():
+            raise ValidationError(
+                "The winning team must belong to this tournament."
+            )
+
+        player_already_assigned = (
+            tournament.teams.filter(
+                players=player,
+            )
+            .exclude(pk=team.pk)
+            .exists()
+        )
+
+        if player_already_assigned:
+            raise ValidationError(
+                "This player already belongs to another "
+                "team in this tournament."
+            )
+
         self.status = "SOLD"
         self.winning_team = team
         self.final_price = price
@@ -322,7 +371,7 @@ class Auction(models.Model):
 
         self.save()
 
-        team.players.add(self.registration.player)
+        team.players.add(player)
 
 
 class PointsTable(models.Model):

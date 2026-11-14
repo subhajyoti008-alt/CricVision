@@ -393,12 +393,25 @@ class AuctionAdmin(admin.ModelAdmin):
         request,
         obj=None,
     ):
-        if obj:
+        if obj is None:
+            return self.readonly_fields + (
+                "status",
+                "current_bid",
+                "winning_team",
+                "final_price",
+            )
+        if obj.status == "SOLD":
             return self.readonly_fields + (
                 "registration",
+                "base_price",
+                "current_bid",
+                "winning_team",
+                "final_price",
             )
 
-        return self.readonly_fields
+        return self.readonly_fields + (
+            "registration",
+        )
 
 
     def formfield_for_foreignkey(
@@ -441,16 +454,19 @@ class AuctionAdmin(admin.ModelAdmin):
         )
 
     def save_model(self, request, obj, form, change):
-        if obj.status == "SOLD" and not obj.completed_at:
-            obj.completed_at = timezone.now()
-
-        super().save_model(request, obj, form, change)
-
-        if obj.status == "SOLD" and obj.winning_team:
-            obj.winning_team.players.add(
-                obj.registration.player
+        if (change and obj.status == "SOLD"
+        and not obj.completed_at):
+            obj.mark_sold(
+                team=obj.winning_team,
+                price = obj.final_price,
             )
-
+            return
+        super().save_model(
+            request,
+            obj,
+            form,
+            change,
+        )
 
 @admin.register(PointsTable)
 class PointsTableAdmin(admin.ModelAdmin):
