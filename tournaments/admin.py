@@ -2,6 +2,7 @@ from datetime import datetime, time, timedelta
 
 from django.contrib import admin, messages
 from django.db import transaction
+from django.http import request
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied, ValidationError
 
@@ -400,11 +401,12 @@ class AuctionAdmin(admin.ModelAdmin):
                 "winning_team",
                 "final_price",
             )
-        if obj.status == "SOLD":
+        if obj.status in {"SOLD", "UNSOLD"}:
             return self.readonly_fields + (
                 "registration",
                 "base_price",
                 "current_bid",
+                "status",
                 "winning_team",
                 "final_price",
             )
@@ -453,14 +455,32 @@ class AuctionAdmin(admin.ModelAdmin):
             **kwargs,
         )
 
-    def save_model(self, request, obj, form, change):
-        if (change and obj.status == "SOLD"
-        and not obj.completed_at):
+    def save_model(
+        self,
+        request,
+        obj,
+        form,
+        change,
+    ):
+        if (
+            change
+            and obj.status == "SOLD"
+            and not obj.completed_at
+        ):
             obj.mark_sold(
                 team=obj.winning_team,
-                price = obj.final_price,
+                price=obj.final_price,
             )
             return
+
+        if (
+            change
+            and obj.status == "UNSOLD"
+            and not obj.completed_at
+        ):
+            obj.mark_unsold()
+            return
+
         super().save_model(
             request,
             obj,

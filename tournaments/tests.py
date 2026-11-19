@@ -479,3 +479,31 @@ class AuctionSaleTests(TestCase):
                 pk=self.player.pk,
             ).exists()
         )
+
+    def test_unsold_auction_has_no_winning_team(self):
+        self.auction.mark_unsold()
+
+        self.auction.refresh_from_db()
+
+        self.assertEqual(
+            self.auction.status,
+            "UNSOLD",
+        )
+
+        self.assertIsNone(
+            self.auction.winning_team,
+        )
+
+        self.assertIsNone(
+            self.auction.final_price,
+        )
+
+        self.assertIsNotNone(
+            self.auction.completed_at,
+        )
+
+        self.assertFalse(
+            self.team.players.filter(
+                pk=self.player.pk,
+            ).exists()
+        )

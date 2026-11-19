@@ -1,16 +1,19 @@
+from xml.parsers.expat import errors
+
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from teams.models import Team 
+from teams.models import Team
 from players.models import Player
 from django.conf import settings
 from django.utils import timezone
 # Create your models here.
 
+
 class Tournament(models.Model):
     FORMAT_CHOICES = [
         ("T10", "T10"),
         ("T20", "T20"),
-        ("ODI", "One Day"), 
+        ("ODI", "One Day"),
         ("CUSTOM", "Custom"),
     ]
 
@@ -24,36 +27,35 @@ class Tournament(models.Model):
     venue = models.CharField(max_length=150, blank=True)
 
     format = models.CharField(
-        max_length = 10,
-        choices = FORMAT_CHOICES,
-        default = "T20",
+        max_length=10,
+        choices=FORMAT_CHOICES,
+        default="T20",
     )
 
     competition_type = models.CharField(
-        max_length = 20,
-        choices = COMPETITION_TYPES,
-        default = "NORMAL",
+        max_length=20,
+        choices=COMPETITION_TYPES,
+        default="NORMAL",
     )
 
     over_per_innings = models.PositiveSmallIntegerField(default=6)
     entry_fee = models.DecimalField(
-    max_digits=10,
-    decimal_places=2,
-    default=0,
-)
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
 
-    
     start_date = models.DateField()
     end_date = models.DateField()
 
     teams = models.ManyToManyField(
         Team,
         blank=True,
-        related_name = "tournaments",
+        related_name="tournaments",
     )
 
     is_published = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add = True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-start_date", "name"]
@@ -63,7 +65,7 @@ class Tournament(models.Model):
             raise ValidationError(
                 {"end_date": "End date cannot be before the start date."}
             )
-        
+
     def __str__(self):
         return self.name
 
@@ -84,36 +86,36 @@ class Registration(models.Model):
 
     player = models.ForeignKey(
         Player,
-        on_delete = models.CASCADE,
-        related_name = "registrations",
+        on_delete=models.CASCADE,
+        related_name="registrations",
     )
 
     tournament = models.ForeignKey(
         Tournament,
-        on_delete = models.CASCADE,
-        related_name = "registrations"
+        on_delete=models.CASCADE,
+        related_name="registrations"
     )
 
     status = models.CharField(
-        max_length = 10,
-        choices = STATUS_CHOICES,
-        default = "PENDING",
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="PENDING",
     )
 
     payment_status = models.CharField(
-        max_length = 10,
-        choices = PAYMENT_STATUS_CHOICES,
-        default = "UNPAID",
+        max_length=10,
+        choices=PAYMENT_STATUS_CHOICES,
+        default="UNPAID",
     )
 
-    created_at = models.DateTimeField(auto_now_add = True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields = ["player", "tournament"],
-                name = "unique_player_registration_per_tournament",
+                fields=["player", "tournament"],
+                name="unique_player_registration_per_tournament",
             )
         ]
 
@@ -264,10 +266,11 @@ class Auction(models.Model):
         return f"{self.registration.player} - {self.get_status_display()}"
 
     def save(self, *args, **kwargs):
-        if self.current_bid is None:
+        if self._state.adding and self.current_bid is None:
             self.current_bid = self.base_price
 
         self.full_clean()
+
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -284,7 +287,7 @@ class Auction(models.Model):
             tournament.entry_fee > 0
             and self.registration.payment_status not in ["PAID", "WAIVED"]
         ):
-             errors["registration"] = (
+            errors["registration"] = (
                 "Payment must be verified or waived before the auction."
             )
 
@@ -300,15 +303,28 @@ class Auction(models.Model):
                 errors["winning_team"] = (
                     "Select the team that bought this player."
                 )
+
             if self.final_price is None:
                 errors["final_price"] = (
                     "Enter the final auction price."
                 )
 
-        if self.current_bid and self.current_bid < self.base_price:
-            errors["current_bid"] = (
-                "Current bid cannot be lower than the base price."
-            )
+            if self.winning_team:
+                player_already_assigned = (
+                    tournament.teams.filter(
+                        players=self.registration.player,
+                    )
+                    .exclude(
+                        pk=self.winning_team.pk,
+                    )
+                    .exists()
+                )
+
+                if player_already_assigned:
+                    errors["winning_team"] = (
+                        "This player already belongs to another "
+                        "team in this tournament."
+                    )
 
         if errors:
             raise ValidationError(errors)
